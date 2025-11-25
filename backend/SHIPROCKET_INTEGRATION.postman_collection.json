@@ -1,0 +1,210 @@
+{
+	"info": {
+		"_postman_id": "shiprocket-integration-collection",
+		"name": "Shiprocket Integration",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Refresh Shiprocket Token",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/shipping/shiprocket/token",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"shipping",
+								"shiprocket",
+								"token"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Shipping Rates",
+			"item": [
+				{
+					"name": "Get Shipping Rates",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pickupPincode\": \"110001\",\n  \"deliveryPincode\": \"400001\",\n  \"weight\": 0.5,\n  \"dimensions\": {\n    \"length\": 10,\n    \"breadth\": 10,\n    \"height\": 10\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/shipping/shiprocket/rates",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"shipping",
+								"shiprocket",
+								"rates"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Shipment Management",
+			"item": [
+				{
+					"name": "Create Shipment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization",
+								"value": "Bearer {{admin_token}}",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"orderId\": \"order-123\",\n  \"orderDate\": \"2023-01-01\",\n  \"pickupLocation\": \"Primary Warehouse\",\n  \"billingCustomerName\": \"John\",\n  \"billingLastName\": \"Doe\",\n  \"billingAddress\": \"123 Main Street\",\n  \"billingCity\": \"Mumbai\",\n  \"billingPincode\": \"400001\",\n  \"billingState\": \"Maharashtra\",\n  \"billingCountry\": \"India\",\n  \"billingEmail\": \"john.doe@example.com\",\n  \"billingPhone\": \"9876543210\",\n  \"shippingIsBilling\": true,\n  \"orderItems\": [\n    {\n      \"name\": \"Test Product\",\n      \"sku\": \"TEST-001\",\n      \"units\": 1,\n      \"selling_price\": 500,\n      \"discount\": 0,\n      \"tax\": 0,\n      \"hsn\": \"123456\"\n    }\n  ],\n  \"paymentMethod\": \"Prepaid\",\n  \"subTotal\": 500,\n  \"length\": 10,\n  \"breadth\": 10,\n  \"height\": 10,\n  \"weight\": 0.5\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/shipping/shiprocket/create",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"shipping",
+								"shiprocket",
+								"create"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Track Shipment",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{base_url}}/api/shipping/shiprocket/track/123456789",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"shipping",
+								"shiprocket",
+								"track",
+								"123456789"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Webhook",
+			"item": [
+				{
+					"name": "Shiprocket Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "X-Shiprocket-Signature",
+								"value": "{{webhook_signature}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"event\": \"shipment.tracking\",\n  \"awb\": \"123456789\",\n  \"tracking_data\": {\n    \"current_status\": \"In Transit\",\n    \"courier_name\": \"DTDC\",\n    \"shipment_track_activities\": [\n      {\n        \"status\": \"Pickup Scheduled\",\n        \"activity\": \"Pickup scheduled for 10:00 AM\",\n        \"date\": \"2023-01-01T10:00:00Z\",\n        \"location\": \"Mumbai\"\n      }\n    ]\n  }\n}"
+						},
+						"url": {
+							"raw": "{{base_url}}/api/shipping/shiprocket/webhook",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"shipping",
+								"shiprocket",
+								"webhook"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://localhost:4002"
+		},
+		{
+			"key": "admin_token",
+			"value": "your_admin_jwt_token_here"
+		},
+		{
+			"key": "webhook_signature",
+			"value": "your_webhook_signature_here"
+		}
+	]
+}
