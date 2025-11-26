@@ -11,7 +11,11 @@ const ShippingPolicy = () => {
         <div className='flex flex-col gap-6 text-gray-600 text-sm md:text-base mb-20'>
             <p>
                 <strong>Shipment processing time</strong><br/>
-                All orders are processed within 2-3 business days. Orders are not shipped or delivered on weekends or holidays.
+                All orders are processed within 2-3 business days. Orders are not shipped or delivered on weekends or holidays.<br/><br/>
+                <strong>Delivery Timelines</strong><br/>
+                - Minimum Delivery Time: 3 business days<br/>
+                - Maximum Delivery Time: 7 business days<br/>
+                Delivery times may vary depending on the delivery location and courier service.
             </p>
             <p>
                 If we are experiencing a high volume of orders, shipments may be delayed by a few days. Please allow additional days in transit for delivery. If there will be a significant delay in shipment of your order, we will contact you via email or telephone.
