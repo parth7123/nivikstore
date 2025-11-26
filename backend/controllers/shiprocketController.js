@@ -165,6 +165,7 @@ export const trackShipmentOrder = async (req, res) => {
     });
   }
 };
+
 /**
  * Handle Shiprocket webhooks
  */
@@ -174,6 +175,9 @@ export const handleWebhook = async (req, res) => {
     const signature = req.headers['x-shiprocket-signature'];
     const rawBody = JSON.stringify(req.body);
     
+    console.log('Webhook Debug - Headers:', JSON.stringify(req.headers));
+    console.log('Webhook Debug - Configured Secret:', process.env.SHIPROCKET_WEBHOOK_SECRET);
+
     if (!verifyWebhookSignature(rawBody, signature, req.headers)) {
       return res.status(401).json({
         success: false,
