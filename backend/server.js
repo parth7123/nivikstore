@@ -38,6 +38,9 @@ app.use('/api/shipping/shiprocket',shiprocketRouter)
 app.get('/',(req,res)=>{
     res.send("API Working")
 })
+app.get('/api',(req,res)=>{
+    res.send("API Working")
+})
 
 // Start server after database connection
 const startServer = async () => {
