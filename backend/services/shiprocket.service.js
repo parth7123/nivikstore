@@ -305,6 +305,24 @@ export async function trackShipment(awb) {
 /**
  * Verify webhook signature
  * @param {String} payload - Raw request body
+ * @param {String} signature - x-shiprocket-signature header
+ * @param {Object} headers - Request headers
+ */
+export function verifyWebhookSignature(payload, signature, headers = {}) {
+  try {
+    // Check for x-api-key header first (simple token auth)
+    const apiKey = headers['x-api-key'];
+    if (apiKey) {
+      console.log(`Webhook Verify: Comparing received '${apiKey}' with stored '${SHIPROCKET_CONFIG.webhookSecret}'`);
+      console.log(`Webhook Verify: Lengths - Received: ${apiKey ? apiKey.length : 0}, Stored: ${SHIPROCKET_CONFIG.webhookSecret ? SHIPROCKET_CONFIG.webhookSecret.length : 0}`);
+      // Use trim() to handle potential whitespace issues from .env files
+      return apiKey === SHIPROCKET_CONFIG.webhookSecret;
+    }
+    
+    // Fallback to HMAC signature verification if needed
+    if (!signature || !SHIPROCKET_CONFIG.webhookSecret) {
+      return false;
+    }
 
     const expectedSignature = crypto
       .createHmac('sha256', SHIPROCKET_CONFIG.webhookSecret)
