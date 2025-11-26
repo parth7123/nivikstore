@@ -7,14 +7,14 @@ export let shiprocketTokenCache = {
   expiry: 0
 };
 
-// Shiprocket API configuration
-const SHIPROCKET_CONFIG = {
+// Helper to get config at runtime
+const getConfig = () => ({
   baseUrl: 'https://apiv2.shiprocket.in/v1/external',
   email: process.env.SHIPROCKET_API_EMAIL,
   password: process.env.SHIPROCKET_API_PASSWORD,
   // Remove surrounding quotes if present, then trim
   webhookSecret: (process.env.SHIPROCKET_WEBHOOK_SECRET || '').replace(/^['"]|['"]$/g, '').trim()
-};
+});
 
 /**
  * Get Shiprocket authentication token
@@ -23,11 +23,12 @@ const SHIPROCKET_CONFIG = {
  */
 export async function getShiprocketToken() {
   try {
+    const config = getConfig();
     // Check if credentials are configured
-    if (!SHIPROCKET_CONFIG.email || 
-        !SHIPROCKET_CONFIG.password || 
-        SHIPROCKET_CONFIG.email === 'your_shiprocket_email' || 
-        SHIPROCKET_CONFIG.password === 'your_shiprocket_password') {
+    if (!config.email || 
+        !config.password || 
+        config.email === 'your_shiprocket_email' || 
+        config.password === 'your_shiprocket_password') {
       console.warn('Shiprocket credentials missing or default. specific features will be disabled/mocked.');
       return null;
     }
@@ -38,9 +39,9 @@ export async function getShiprocketToken() {
     }
 
     // Request new token
-    const response = await axios.post(`${SHIPROCKET_CONFIG.baseUrl}/auth/login`, {
-      email: SHIPROCKET_CONFIG.email,
-      password: SHIPROCKET_CONFIG.password
+    const response = await axios.post(`${config.baseUrl}/auth/login`, {
+      email: config.email,
+      password: config.password
     });
 
     const token = response.data.token || response.data.data?.token;
@@ -111,6 +112,7 @@ export function initializeAutoTokenRefresh() {
  */
 export async function cancelShiprocketOrder(shiprocketOrderId) {
   try {
+    const config = getConfig();
     const token = await getShiprocketToken();
     
     if (!token) {
@@ -119,7 +121,7 @@ export async function cancelShiprocketOrder(shiprocketOrderId) {
     }
 
     const response = await axios.post(
-      `${SHIPROCKET_CONFIG.baseUrl}/orders/cancel`,
+      `${config.baseUrl}/orders/cancel`,
       { ids: [shiprocketOrderId] },
       {
         headers: {
@@ -143,6 +145,7 @@ export async function cancelShiprocketOrder(shiprocketOrderId) {
  */
 export async function getShippingRates(shipmentData) {
   try {
+    const config = getConfig();
     const token = await getShiprocketToken();
     
     if (!token) {
@@ -167,7 +170,7 @@ export async function getShippingRates(shipmentData) {
         };
     }
     
-    const response = await axios.post(`${SHIPROCKET_CONFIG.baseUrl}/courier/serviceability`, {
+    const response = await axios.post(`${config.baseUrl}/courier/serviceability`, {
       pickup_postcode: shipmentData.pickupPincode,
       delivery_postcode: shipmentData.deliveryPincode,
       weight: shipmentData.weight,
@@ -199,6 +202,7 @@ export async function getShippingRates(shipmentData) {
  */
 export async function createShipment(orderData) {
   try {
+    const config = getConfig();
     const token = await getShiprocketToken();
     
     if (!token) {
@@ -250,7 +254,7 @@ export async function createShipment(orderData) {
       weight: orderData.weight
     };
 
-    const response = await axios.post(`${SHIPROCKET_CONFIG.baseUrl}/orders/create/adhoc`, shipmentRequest, {
+    const response = await axios.post(`${config.baseUrl}/orders/create/adhoc`, shipmentRequest, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -270,6 +274,7 @@ export async function createShipment(orderData) {
  */
 export async function trackShipment(awb) {
   try {
+    const config = getConfig();
     const token = await getShiprocketToken();
     
     if (!token) {
@@ -288,7 +293,7 @@ export async function trackShipment(awb) {
         };
     }
 
-    const response = await axios.get(`${SHIPROCKET_CONFIG.baseUrl}/courier/track/awb/${awb}`, {
+    const response = await axios.get(`${config.baseUrl}/courier/track/awb/${awb}`, {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
@@ -310,22 +315,23 @@ export async function trackShipment(awb) {
  */
 export function verifyWebhookSignature(payload, signature, headers = {}) {
   try {
+    const config = getConfig();
     // Check for x-api-key header first (simple token auth)
     const apiKey = headers['x-api-key'];
     if (apiKey) {
-      console.log(`Webhook Verify: Comparing received '${apiKey}' with stored '${SHIPROCKET_CONFIG.webhookSecret}'`);
-      console.log(`Webhook Verify: Lengths - Received: ${apiKey ? apiKey.length : 0}, Stored: ${SHIPROCKET_CONFIG.webhookSecret ? SHIPROCKET_CONFIG.webhookSecret.length : 0}`);
+      console.log(`Webhook Verify: Comparing received '${apiKey}' with stored '${config.webhookSecret}'`);
+      console.log(`Webhook Verify: Lengths - Received: ${apiKey ? apiKey.length : 0}, Stored: ${config.webhookSecret ? config.webhookSecret.length : 0}`);
       // Use trim() to handle potential whitespace issues from .env files
-      return apiKey === SHIPROCKET_CONFIG.webhookSecret;
+      return apiKey === config.webhookSecret;
     }
     
     // Fallback to HMAC signature verification if needed
-    if (!signature || !SHIPROCKET_CONFIG.webhookSecret) {
+    if (!signature || !config.webhookSecret) {
       return false;
     }
 
     const expectedSignature = crypto
-      .createHmac('sha256', SHIPROCKET_CONFIG.webhookSecret)
+      .createHmac('sha256', config.webhookSecret)
       .update(payload)
       .digest('base64');
 
