@@ -12,7 +12,8 @@ const SHIPROCKET_CONFIG = {
   baseUrl: 'https://apiv2.shiprocket.in/v1/external',
   email: process.env.SHIPROCKET_API_EMAIL,
   password: process.env.SHIPROCKET_API_PASSWORD,
-  webhookSecret: (process.env.SHIPROCKET_WEBHOOK_SECRET || '').trim()
+  // Remove surrounding quotes if present, then trim
+  webhookSecret: (process.env.SHIPROCKET_WEBHOOK_SECRET || '').replace(/^['"]|['"]$/g, '').trim()
 };
 
 /**
