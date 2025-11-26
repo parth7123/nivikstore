@@ -12,7 +12,7 @@ const SHIPROCKET_CONFIG = {
   baseUrl: 'https://apiv2.shiprocket.in/v1/external',
   email: process.env.SHIPROCKET_API_EMAIL,
   password: process.env.SHIPROCKET_API_PASSWORD,
-  webhookSecret: process.env.SHIPROCKET_WEBHOOK_SECRET
+  webhookSecret: (process.env.SHIPROCKET_WEBHOOK_SECRET || '').trim()
 };
 
 /**
@@ -259,13 +259,13 @@ export async function createShipment(orderData) {
     return response.data;
   } catch (error) {
     console.error('Shiprocket shipment creation error:', error.response?.data || error.message);
-    throw new Error(`Failed to create shipment: ${error.response?.data?.message || error.message}`);
+    throw new Error(`Failed to create Shiprocket shipment: ${error.response?.data?.message || error.message}`);
   }
 }
 
 /**
- * Track shipment by AWB number
- * @param {String} awb - AWB number to track
+ * Track shipment
+ * @param {String} awb - AWB number
  */
 export async function trackShipment(awb) {
   try {
@@ -275,15 +275,12 @@ export async function trackShipment(awb) {
         console.warn('Shiprocket token missing. Returning mock tracking data.');
         return {
             tracking_data: {
-                awb: awb,
-                current_status: 'In Transit (Mock)',
-                courier_name: 'Mock Courier',
-                shipment_track_activities: [
+                track_status: 1,
+                shipment_status: 7,
+                shipment_track: [
                     {
-                        status: 'In Transit',
-                        activity: 'Package is on the way',
-                        date: new Date().toISOString(),
-                        location: 'Mock Location'
+                        status: "Out for Delivery",
+                        time: new Date().toISOString()
                     }
                 ]
             }
@@ -305,63 +302,77 @@ export async function trackShipment(awb) {
 }
 
 /**
- * Verify Shiprocket webhook signature
- * @param {String} payload - Webhook payload
- * @param {String} signature - Signature from headers (x-shiprocket-signature)
- * @param {Object} headers - Request headers (to check for x-api-key)
+ * Verify webhook signature
+ * @param {String} payload - Raw request body
+ * @param {String} signature - x-shiprocket-signature header
+ * @param {Object} headers - Request headers
  */
 export function verifyWebhookSignature(payload, signature, headers = {}) {
   try {
-    // Method 1: Check for x-api-key (Token based)
-    // This is what the user's panel shows
+    // Check for x-api-key header first (simple token auth)
     const apiKey = headers['x-api-key'];
     if (apiKey) {
+      // Use trim() to handle potential whitespace issues from .env files
       return apiKey === SHIPROCKET_CONFIG.webhookSecret;
     }
-
-    // Method 2: Check for HMAC signature (Legacy/Advanced)
-    if (signature) {
-      const expectedSignature = crypto
-        .createHmac('sha256', SHIPROCKET_CONFIG.webhookSecret)
-        .update(payload)
-        .digest('hex');
-
-      return crypto.timingSafeEqual(
-        Buffer.from(signature, 'hex'),
-        Buffer.from(expectedSignature, 'hex')
-      );
-    }
     
-    return false;
+    // Fallback to HMAC signature verification if needed
+    if (!signature || !SHIPROCKET_CONFIG.webhookSecret) {
+      return false;
+    }
+
+    const expectedSignature = crypto
+      .createHmac('sha256', SHIPROCKET_CONFIG.webhookSecret)
+      .update(payload)
+      .digest('base64');
+
+    return signature === expectedSignature;
   } catch (error) {
     console.error('Webhook signature verification error:', error);
     return false;
   }
 }
+
+/**
+ * Normalize tracking data from Shiprocket
+ */
 export function normalizeTrackingData(shiprocketData) {
-  try {
-    const normalized = {
-      awb: shiprocketData.tracking_data?.awb || '',
-      status: shiprocketData.tracking_data?.current_status || 'Unknown',
-      courier: shiprocketData.tracking_data?.courier_name || '',
-      labelUrl: shiprocketData.label_url || '',
-      events: []
-    };
+  const data = shiprocketData.tracking_data || shiprocketData;
+  
+  return {
+    status: mapShiprocketStatus(data.shipment_status),
+    events: (data.shipment_track || []).map(event => ({
+      status: event.status,
+      location: event.location,
+      timestamp: event.time,
+      description: event.activity
+    })),
+    estimatedDelivery: data.etd
+  };
+}
 
-    // Normalize tracking events
-    if (shiprocketData.tracking_data?.shipment_track_activities) {
-      normalized.events = shiprocketData.tracking_data.shipment_track_activities.map(activity => ({
-        status: activity.status || 'Unknown',
-        message: activity.activity || '',
-        timestamp: activity.date || new Date(),
-        location: activity.location || '',
-        raw: activity
-      }));
-    }
-
-    return normalized;
-  } catch (error) {
-    console.error('Error normalizing tracking data:', error);
-    throw new Error(`Failed to normalize tracking data: ${error.message}`);
-  }
+/**
+ * Map Shiprocket status codes to our status
+ */
+function mapShiprocketStatus(statusCode) {
+  const statusMap = {
+    6: 'Shipped',
+    7: 'Delivered',
+    8: 'Canceled',
+    9: 'RTO Initiated',
+    10: 'RTO Delivered',
+    11: 'Pending',
+    12: 'Lost',
+    13: 'Pickup Error',
+    14: 'RTO Acknowledged',
+    15: 'Pickup Rescheduled',
+    16: 'Cancellation Requested',
+    17: 'Out for Delivery',
+    18: 'In Transit',
+    19: 'Out for Pickup',
+    20: 'Pickup Exception',
+    21: 'Undelivered'
+  };
+  
+  return statusMap[statusCode] || 'Processing';
 }
