@@ -34,6 +34,7 @@ const Footer = () => {
                 <li>+91 7600032223</li>
                 <li>+91 7874299732</li>
                 <li>nivikstore01@gmail.com</li>
+                <li>Santoshikrupa, Bapa Sitram, Katargam, Surat, Gujarat, India</li>
             </ul>
         </div>
 
