@@ -39,7 +39,7 @@ const ShippingPanel = ({ token, order, onShipmentCreated }) => {
       const shipmentData = {
         orderId: order._id,
         orderDate: new Date(order.date).toISOString().split('T')[0],
-        pickupLocation: 'Primary Warehouse', // Should be configurable
+        pickupLocation: 'Home', // Matches Shiprocket 'Home' address nickname
         billingCustomerName: order.address.firstName,
         billingLastName: order.address.lastName,
         billingAddress: order.address.street,

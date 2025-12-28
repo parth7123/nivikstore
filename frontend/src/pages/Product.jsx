@@ -19,10 +19,23 @@ const Product = () => {
       if (item._id === productId) {
         setProductData(item)
         setImage(item.image[0])
+
+        if (item.sizes && item.sizes.length > 0) {
+          setSize(item.sizes[0])
+        }
         return null;
       }
     })
 
+  }
+
+  const handleBuyNow = () => {
+    if (!size) {
+      // Although auto-selected, keep safety check
+      return; 
+    }
+    addToCart(productData._id, size);
+    navigate('/place-order');
   }
 
   useEffect(() => {
@@ -69,7 +82,10 @@ const Product = () => {
                 })}
               </div>
             </div>
-            <button onClick={() => addToCart(productData._id, size)} className='backdrop-blur-xl bg-black/90 hover:bg-black text-white px-8 py-3 text-sm shadow-lg transition-all duration-300 rounded-sm'>ADD TO CART</button>
+            <div className='flex gap-5'>
+              <button onClick={() => addToCart(productData._id, size)} className='backdrop-blur-xl bg-black/90 hover:bg-black text-white px-8 py-3 text-sm shadow-lg transition-all duration-300 rounded-sm active:bg-gray-700'>ADD TO CART</button>
+              <button onClick={handleBuyNow} className='backdrop-blur-xl bg-orange-600 hover:bg-orange-700 text-white px-8 py-3 text-sm shadow-lg transition-all duration-300 rounded-sm active:bg-orange-800'>BUY NOW</button>
+            </div>
             <hr className='mt-8 sm:w-4/5' />
             <div className='text-sm text-gray-500 mt-5 flex flex-col gap-1'>
               <p>100% Original product.</p>

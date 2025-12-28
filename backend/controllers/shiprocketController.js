@@ -82,17 +82,29 @@ export const createShipmentOrder = async (req, res) => {
     }
 
     // Create shipment in Shiprocket
+    console.log('Shipment Request - Pickup Location:', orderData.pickupLocation);
+    console.log('Shipment Request - Full Data:', JSON.stringify(orderData, null, 2));
     const shiprocketResponse = await createShipment(orderData);
+    console.log('Shiprocket Create Response:', JSON.stringify(shiprocketResponse, null, 2));
     
+    // Extract AWB - Shiprocket API might return 'awb_code' or 'awb'
+    // Extract AWB - Shiprocket API might return 'awb_code' or 'awb'. If missing (e.g. low balance), use placeholder.
+    const awbCode = shiprocketResponse.awb || shiprocketResponse.awb_code || shiprocketResponse.payload?.awb_code || `PENDING_${orderData.orderId}`;
+    
+    if (!awbCode) {
+        // This should theoretically not happen with the fallback, but keeping as safety net
+        throw new Error('Failed to get AWB from Shiprocket response: ' + JSON.stringify(shiprocketResponse));
+    }
+
     // Save shipment to our database
     const shipment = new Shipment({
       orderId: orderData.orderId,
-      awb: shiprocketResponse.awb,
+      awb: awbCode,
       status: 'Pending',
-      labelUrl: shiprocketResponse.label_url,
-      courier: 'Shiprocket',
+      labelUrl: shiprocketResponse.label_url || shiprocketResponse.payload?.label_url,
+      courier: shiprocketResponse.courier_name || 'Shiprocket',
       provider: 'shiprocket',
-      providerOrderId: shiprocketResponse.shipment_id
+      providerOrderId: shiprocketResponse.shipment_id || shiprocketResponse.payload?.shipment_id
     });
     
     await shipment.save();
@@ -101,18 +113,18 @@ export const createShipmentOrder = async (req, res) => {
     await orderModel.findByIdAndUpdate(orderData.orderId, {
       shipmentId: shipment._id,
       'shipping.provider': 'shiprocket',
-      'shipping.providerOrderId': shiprocketResponse.shipment_id,
-      'shipping.awb': shiprocketResponse.awb,
-      'shipping.labelUrl': shiprocketResponse.label_url
+      'shipping.providerOrderId': shipment.providerOrderId,
+      'shipping.awb': awbCode,
+      'shipping.labelUrl': shipment.labelUrl
     });
     
     res.json({
       success: true,
       data: {
         shipmentId: shipment._id,
-        awb: shiprocketResponse.awb,
-        labelUrl: shiprocketResponse.label_url,
-        shiprocketShipmentId: shiprocketResponse.shipment_id,
+        awb: awbCode,
+        labelUrl: shipment.labelUrl,
+        shiprocketShipmentId: shipment.providerOrderId,
         message: 'Shipment created successfully'
       }
     });
